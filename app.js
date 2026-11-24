@@ -210,24 +210,24 @@ render=function(){const p=H.split('/');let html;
  if(p[0]=='admin')html=!S.admin?A.login():(A[p[1]=='edit'?'edit':p[1]||'dash']||A.dash)(p[2]);
  else if(p[0]=='me'&&!S.me){LG.back='me';html=V.login()}else html=(V[p[0]]||V.home)(p[1]);
  $('#app').innerHTML=html;if(p[0]=='notes'){S.notes.forEach(n=>n.r=1);persist()}nav();
- const e=$('#inst');if(e&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone){const ios=/iphone|ipad/i.test(navigator.userAgent);e.innerHTML=`<div class="card"><h3>📲 تثبيت التطبيق على موبايلك</h3>${window.DP?'<br><button class="g w" onclick="inst()">تثبيت الآن</button>':`<p>${ios?'اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».':'من قائمة المتصفح ⋮ اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».'}</p>`}</div>`}scrollTo(0,0)}
+ const e=$('#inst');if(e&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone){const ios=/iphone|ipad/i.test(navigator.userAgent);e.innerHTML=`<div class="card"><h3>📲 تثبيت التطبيق على موبايلك</h3>${window.DP?'<br><button class="g w" onclick="inst()">تثبيت الآن</button>':`<p>${ios?'اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية».':'من قائمة المتصفح ⋮ اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».'}</p>`}</div>`}scrollTo(0,0)};
 document.body.insertAdjacentHTML('beforeend','<a class="fab" id="fab" target="_blank" rel="noopener">💬</a>');
 
 // ======= v3: email login, owner Gmail, visual editor, prices, reviews =======
 S.revs.forEach(r=>{if(!r.id)r.id=uid()});
 const T=(k,d)=>`<span data-k="${k}" ${S.ed?'contenteditable="true" class="ed"':''}>${esc(S.site[k]||d)}</span>`;
-window.pickImg=(cb,w=500)=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>i.files[0]&&shrink(i.files[0],cb,w);i.click()};
+window.pickImg=cb=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=()=>i.files[0]&&shrink(i.files[0],cb);i.click()};
 window.sk=(k,v)=>{S.site[k]=v;persist();applySite()};
-window.applySite=()=>{const r=document.documentElement.style,s=S.site;[['--c1',s.c1],['--c2',s.c2],['--p',s.p],['--bg',s.bg||'#FFFFFF']].forEach(x=>x[1]?r.setProperty(x[0],x[1]):r.removeProperty(x[0]))};
+window.applySite=()=>{const r=document.documentElement.style,s=S.site;[['--c1',s.c1],['--c2',s.c2],['--p',s.p],['--bg',s.bg]].forEach(x=>x[1]?r.setProperty(x[0],x[1]):r.removeProperty(x[0]))};
 document.addEventListener('focusout',e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&S.ed){S.site[k]=e.target.textContent.trim();persist()}});
-window.editCat=id=>pickImg(d=>{const c=S.cats.find(x=>x.id==id);c.img=d;persist();render();toast('تم تغيير الأيقونة')},200);
+window.editCat=id=>{const c=S.cats.find(x=>x.id==id),e=prompt('إيموجي الأيقونة الجديدة (اتركه فارغاً لرفع صورة)',c.icon);if(e===null)return;if(e){c.icon=e;c.img='';persist();render()}else pickImg(d=>{c.img=d;persist();render()})};
 const svcCard=()=>S.svc.length?`<div class="card"><h3>💰 أسعار الصيانة (تبدأ من)</h3>${S.svc.map(s=>`<div class="row"><span>${esc(s.name)}</span><b>${$m(s.price)}</b></div>`).join('')}</div>`:'';
 V.home=()=>{const best=[...S.prods].filter(p=>p.on).sort((a,b)=>b.sold-a.sold).slice(0,4),deals=S.prods.filter(p=>p.on&&p.disc>0).slice(0,3),vr=S.revs.filter(r=>!r.hide).slice(0,3),hs=S.site.himg?`background:linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url('${S.site.himg}') center/cover`:'';
- return `<div class="hero2" style="${hs}" ${S.ed?'data-ed-target="himg"':''}><span class="tag2">${T('tag','صيانة سماعات وإكسسوارات الهواتف')}</span><h1>${T('h1','كل ما يحتاجه هاتفك في مكان واحد')}</h1><p>${T('hp','سماعات، شواحن، جرابات وحمايات شاشة، مع خدمة صيانة على يد فنيين متخصصين.')}</p><br><div class="row" style="justify-content:flex-start"><button class="wb" onclick="go('products')">تسوّق الآن ←</button><button class="dk" onclick="go('repair')">احجز صيانة 🔧</button></div></div>
+ return `<div class="hero2" style="${hs}"><span class="tag2">${T('tag','صيانة سماعات وإكسسوارات الهواتف')}</span><h1>${T('h1','كل ما يحتاجه هاتفك في مكان واحد')}</h1><p>${T('hp','سماعات، شواحن، جرابات وحمايات شاشة، مع خدمة صيانة على يد فنيين متخصصين.')}</p><br><div class="row" style="justify-content:flex-start"><button class="wb" onclick="go('products')">تسوّق الآن ←</button><button class="dk" onclick="go('repair')">احجز صيانة 🔧</button></div></div>
 <h2>تواصل مع ${esc(S.st.name)}</h2><p class="mut">${esc(S.st.hours)}</p>${contact()}
 <h2>تسوّق بالتصنيف</h2><div class="chips cats">${S.cats.map(c=>`<a onclick="${S.ed?`editCat(${c.id})`:`S.cat=${c.id};go('products')`}">${ctile(c)}${esc(c.name)}</a>`).join('')}</div>
 ${deals.length?`<h2>عروض اليوم</h2><div class="grid">${deals.map(card).join('')}</div>`:''}<h2>الأكثر مبيعاً</h2><div class="grid">${best.map(card).join('')}</div>
-<div class="banner" ${S.ed?'data-ed-target="bimg"':''}><h2>${T('bt','هاتفك تعبان؟ احجزه ونصلحه في نفس اليوم')}</h2><p>${T('bp','شاشة، بطارية، شحن، برمجة، وتابع حالة الجهاز خطوة بخطوة.')}</p><br><button class="wb" onclick="go('repair')">احجز موعد صيانة ←</button></div>
+<div class="banner"><h2>${T('bt','هاتفك تعبان؟ احجزه ونصلحه في نفس اليوم')}</h2><p>${T('bp','شاشة، بطارية، شحن، برمجة، وتابع حالة الجهاز خطوة بخطوة.')}</p><br><button class="wb" onclick="go('repair')">احجز موعد صيانة ←</button></div>
 ${svcCard()}<div class="row"><h2>⭐ آراء العملاء</h2><a class="mut" onclick="go('reviews')">عرض الكل ←</a></div>${vr.map(r=>`<div class="card"><b>${esc(r.n)}</b> <span class="star">${stars(r.s)}</span><p>${esc(r.t)}</p></div>`).join('')||'<p class="mut">كن أول من يقيّمنا</p>'}`};
 const _rp=V.repair;V.repair=()=>_rp().replace('واحنا نتولى الباقي</p>','واحنا نتولى الباقي</p>'+svcCard());
 let RS=5;window.rs5=n=>{RS=n;[...document.querySelectorAll('.stp5 button')].forEach((b,i)=>b.classList.toggle('on',i<n))};
@@ -261,12 +261,11 @@ window.rv=(id,k,v)=>{const i=S.revs.findIndex(r=>r.id==id);if(i<0)return;if(k=='
 const tb=()=>`<b>✏️ وضع التعديل المرئي:</b> اضغط على أي نص أو أيقونة تصنيف لتعديلها
 <label>الغلاف <input type="color" value="${S.site.c1||'#0b1b4d'}" oninput="sk('c1',this.value)"><input type="color" value="${S.site.c2||'#1D4ED8'}" oninput="sk('c2',this.value)"></label>
 <button class="l btn" onclick="pickImg(d=>{sk('himg',d);render()},1000)">صورة الغلاف</button><button class="l btn" onclick="sk('himg','');render()">حذف الصورة</button>
-<label>لون التطبيق <input type="color" value="${S.site.p||'#1D4ED8'}" oninput="sk('p',this.value)"></label><label>الخلفية <input type="color" value="${S.site.bg||'#FFFFFF'}" oninput="sk('bg',this.value)"></label>
+<label>لون التطبيق <input type="color" value="${S.site.p||'#1D4ED8'}" oninput="sk('p',this.value)"></label><label>الخلفية <input type="color" value="${S.site.bg||'#F8FAFC'}" oninput="sk('bg',this.value)"></label>
 <button class="l btn" onclick="pickImg(d=>{sk('logo',d);render()})">الشعار</button><button class="l btn" onclick="S.site={};persist();render()">استعادة الأصل</button><button class="g btn" onclick="S.ed=0;render()">تم ✓</button>`;
 const _r=render;render=function(){_r();updUI()};
 window.updUI=()=>{let f=$('#edfab');if(!f){document.body.insertAdjacentHTML('beforeend','<button id="edfab" onclick="S.ed=1;render()">✏️ تعديل الموقع</button><div id="edtb"></div>');f=$('#edfab')}
  const on=S.admin&&H.split('/')[0]!='admin',t=$('#edtb');f.style.display=on&&!S.ed?'':'none';t.style.display=on&&S.ed?'flex':'none';document.body.classList.toggle('edm',!!(on&&S.ed));if(on&&S.ed)t.innerHTML=tb();applySite()};
-document.addEventListener('click',e=>{if(!S.admin||!S.ed)return;const box=e.target.closest('[data-ed-target]');if(!box||e.target.closest('button,.ed'))return;const key=box.dataset.edTarget;pickImg(d=>{sk(key,d);render();toast('تم تحديث الخلفية')},1000)});
 
 // ======= v4: gallery images, no emoji, Whacka-like catalog =======
 const ic=d=>`<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -342,7 +341,6 @@ const _rc=window.resendCode;window.resendCode=()=>{if(!FBON())return _rc();if(Da
 const _cc=window.checkCode;window.checkCode=()=>{if(!FBON())return _cc();const v=$('#lc').value.trim();if(!LG.conf)return toast('أعد إرسال الكود');LG.conf.confirm(v).then(()=>{LG.code=v;LG.exp=Date.now()+1e5;LG.at=0;_cc()}).catch(()=>toast('الكود غير صحيح أو منتهي'))};
 const _v5=V.login;V.login=()=>{if(LG.step==1&&FBON())return `<h2>أدخل كود التحقق</h2><div class="card"><p>أرسلنا كود التحقق برسالة SMS إلى <b>${esc(LG.phone)}</b>. لن يكمل التسجيل إلا من يملك هذا الرقم.</p><label>الكود</label><input id="lc" inputmode="numeric" maxlength="6" autocomplete="one-time-code"><button class="g w" onclick="checkCode()">تأكيد</button><br><br><div class="row"><button class="l btn" onclick="resendCode()">إعادة الإرسال</button><button class="l btn" onclick="LG.step=0;render()">تعديل الرقم</button></div></div>`;
  return _v5()+(LG.step==0?`<div class="card"><h3>دخول المالك</h3><label>بريد Gmail</label><input id="oe" type="email" autocomplete="username"><label>كلمة المرور</label><input id="op" type="password" autocomplete="current-password"><button class="dk w" onclick="ownerLogin()">دخول المالك</button></div>`:'')};
-const _r2=render;render=function(){_r2();updUI()};
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
