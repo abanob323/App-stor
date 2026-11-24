@@ -1,4 +1,4 @@
-const V = 'elbob-v8';
+const V = 'elbob-v9';
 const FILES = [
   './',
   'index.html',
