@@ -261,7 +261,7 @@ window.rv=(id,k,v)=>{const i=S.revs.findIndex(r=>r.id==id);if(i<0)return;if(k=='
 const tb=()=>`<b>✏️ وضع التعديل المرئي:</b> اضغط على أي نص أو أيقونة تصنيف لتعديلها
 <label>الغلاف <input type="color" value="${S.site.c1||'#0b1b4d'}" oninput="sk('c1',this.value)"><input type="color" value="${S.site.c2||'#1D4ED8'}" oninput="sk('c2',this.value)"></label>
 <button class="l btn" onclick="pickImg(d=>{sk('himg',d);render()},1000)">صورة الغلاف</button><button class="l btn" onclick="sk('himg','');render()">حذف الصورة</button>
-<label>لون التطبيق <input type="color" value="${S.site.p||'#1D4ED8'}" oninput="sk('p',this.value)"></label><label>الخلفية <input type="color" value="${S.site.bg||'#F8FAFC'}" oninput="sk('bg',this.value)"></label>
+<label>لون التطبيق <input type="color" value="${S.site.p||'#1D4ED8'}" oninput="sk('p',this.value)"></label><label>الخلفية <input type="color" value="${S.site.bg||'#FFFFFF'}" oninput="sk('bg',this.value)"></label>
 <button class="l btn" onclick="pickImg(d=>{sk('logo',d);render()})">الشعار</button><button class="l btn" onclick="S.site={};persist();render()">استعادة الأصل</button><button class="g btn" onclick="S.ed=0;render()">تم ✓</button>`;
 const _r=render;render=function(){_r();updUI()};
 window.updUI=()=>{let f=$('#edfab');if(!f){document.body.insertAdjacentHTML('beforeend','<button id="edfab" onclick="S.ed=1;render()">✏️ تعديل الموقع</button><div id="edtb"></div>');f=$('#edfab')}
@@ -341,6 +341,73 @@ const _rc=window.resendCode;window.resendCode=()=>{if(!FBON())return _rc();if(Da
 const _cc=window.checkCode;window.checkCode=()=>{if(!FBON())return _cc();const v=$('#lc').value.trim();if(!LG.conf)return toast('أعد إرسال الكود');LG.conf.confirm(v).then(()=>{LG.code=v;LG.exp=Date.now()+1e5;LG.at=0;_cc()}).catch(()=>toast('الكود غير صحيح أو منتهي'))};
 const _v5=V.login;V.login=()=>{if(LG.step==1&&FBON())return `<h2>أدخل كود التحقق</h2><div class="card"><p>أرسلنا كود التحقق برسالة SMS إلى <b>${esc(LG.phone)}</b>. لن يكمل التسجيل إلا من يملك هذا الرقم.</p><label>الكود</label><input id="lc" inputmode="numeric" maxlength="6" autocomplete="one-time-code"><button class="g w" onclick="checkCode()">تأكيد</button><br><br><div class="row"><button class="l btn" onclick="resendCode()">إعادة الإرسال</button><button class="l btn" onclick="LG.step=0;render()">تعديل الرقم</button></div></div>`;
  return _v5()+(LG.step==0?`<div class="card"><h3>دخول المالك</h3><label>بريد Gmail</label><input id="oe" type="email" autocomplete="username"><label>كلمة المرور</label><input id="op" type="password" autocomplete="current-password"><button class="dk w" onclick="ownerLogin()">دخول المالك</button></div>`:'')};
+
+// ======= v7: WhatsApp code sent from the store number via API (ELBOB_API in config.js) =======
+const WAPI=()=>window.ELBOB_API||'';
+const wPost=(p,b)=>fetch(WAPI()+p,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json());
+const wView=()=>`<h2>أدخل الكود</h2><div class="card"><p>أرسلنا كود التحقق إلى واتساب الرقم <b dir="ltr">${esc(LG.phone)}</b> من رقم المتجر. لن يكتمل التسجيل إلا بإدخاله.</p><label>الكود (4 أرقام)</label><input id="lc" inputmode="numeric" maxlength="4" autocomplete="one-time-code"><button class="g w" onclick="checkCode()">تأكيد</button><br><br><div class="row"><button class="l btn" onclick="resendCode()">إعادة الإرسال</button><button class="l btn" onclick="LG.wa=0;LG.step=0;render()">تعديل الرقم</button></div></div>`;
+const _v7=V.login;V.login=()=>LG.step==1&&LG.wa?wView():_v7();
+const _sc7=window.sendCode;window.sendCode=()=>{if(!WAPI())return _sc7();
+ const n=$('#ln').value.trim().replace(/\s+/g,' '),e=$('#le').value.trim().toLowerCase(),p=$('#lp').value.trim().replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632);
+ if(n.split(' ').length<2||n.length<6)return toast('اكتب الاسم الحقيقي (اسمين على الأقل)');if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return toast('البريد الإلكتروني غير صحيح');if(!/^01[0125]\d{8}$/.test(p))return toast('رقم الهاتف غير صحيح');
+ const u=S.users.find(x=>x.phone==p);if(u&&u.blocked)return toast('هذا الحساب موقوف');toast('جاري إرسال الكود...');
+ wPost('/send',{phone:p}).then(r=>{if(!r.ok)return toast(r.error||'تعذر الإرسال');LG={...LG,step:1,name:n,email:e,phone:p,wa:1,at:0,last:Date.now()};render();toast('تم إرسال الكود على واتساب')}).catch(()=>toast('تعذر الاتصال بخادم التحقق'))};
+const _rc7=window.resendCode;window.resendCode=()=>{if(!LG.wa)return _rc7();wPost('/send',{phone:LG.phone}).then(r=>toast(r.ok?'تم إرسال كود جديد':(r.error||'تعذر الإرسال'))).catch(()=>toast('تعذر الاتصال'))};
+const _cc7=window.checkCode;window.checkCode=()=>{if(!LG.wa)return _cc7();const v=$('#lc').value.trim();
+ wPost('/verify',{phone:LG.phone,code:v}).then(r=>{if(!r.ok)return toast(r.error||'الكود غير صحيح');LG.code=v;LG.exp=Date.now()+1e5;LG.at=0;LG.wa=0;_cc()}).catch(()=>toast('تعذر الاتصال بخادم التحقق'))};
+
+// ======= v8: free phone-ownership proof via WhatsApp + owner-signed activation link =======
+const b64u=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const enc=s=>new TextEncoder().encode(s);
+const pj=o=>b64u(enc(JSON.stringify(o)));
+const jp=s=>JSON.parse(new TextDecoder().decode(ub64(s)));
+const ECP={name:'ECDSA',namedCurve:'P-256'},ESG={name:'ECDSA',hash:'SHA-256'};
+const signP=async p=>{const pv=JSON.parse(localStorage.getItem(K+'ovk')||'null');if(!pv)throw new Error('nokey');const key=await crypto.subtle.importKey('jwk',pv,ECP,false,['sign']);return b64u(await crypto.subtle.sign(ESG,key,enc(p)))};
+const verP=async(p,sig)=>{const key=await crypto.subtle.importKey('jwk',{...window.OWNER_PUB,ext:true},ECP,false,['verify']);return crypto.subtle.verify(ESG,key,ub64(sig),enc(p))};
+
+window.genKey=async()=>{try{const k=await crypto.subtle.generateKey(ECP,true,['sign','verify']),pv=await crypto.subtle.exportKey('jwk',k.privateKey),pb=await crypto.subtle.exportKey('jwk',k.publicKey);localStorage.setItem(K+'ovk',JSON.stringify(pv));$('#pubk').value='window.OWNER_PUB='+JSON.stringify({kty:pb.kty,crv:pb.crv,x:pb.x,y:pb.y})+';';toast('تم التوليد: انسخ السطر وضعه في config.js')}catch(e){toast('تعذر التوليد على هذا المتصفح')}};
+const keyCard=()=>{const has=!!localStorage.getItem(K+'ovk');return `<div class="card"><h3>مفتاح تفعيل العملاء</h3><p class="mut">يوقّع روابط التفعيل التي ترسلها للعميل من رقم المتجر. المفتاح الخاص يبقى على هذا الجهاز فقط.</p><p>المفتاح على هذا الجهاز: <b>${has?'موجود':'غير موجود'}</b><br>المفتاح العام في config.js: <b>${window.OWNER_PUB?'مضاف':'غير مضاف'}</b></p><button class="w" onclick="genKey()">${has?'إعادة توليد (يبطل الروابط القديمة)':'توليد المفتاح'}</button><textarea id="pubk" readonly placeholder="سيظهر هنا السطر الذي تنسخه في config.js"></textarea><button class="l btn w" onclick="navigator.clipboard.writeText($('#pubk').value).then(()=>toast('تم النسخ'))">نسخ السطر</button></div>`};
+const _as8=A.set;A.set=()=>{const h=_as8(),t='<div class="card"><h3>التصنيفات</h3>';return h.includes(t)?h.replace(t,keyCard()+t):h+keyCard()};
+const pendView=()=>{const pl=pj({n:LG.name,e:LG.email,p:LG.phone,t:Date.now()}),msg=`طلب تفعيل حساب (${S.st.name})\nالاسم: ${LG.name}\nالبريد: ${LG.email}\nالهاتف: ${LG.phone}\nرابط التفعيل (للمالك):\n${location.origin+location.pathname}?approve=${pl}`;
+ return `<h2>تفعيل الحساب</h2><div class="card"><p>لإثبات أن الرقم <b dir="ltr">${esc(LG.phone)}</b> ملكك: أرسل رسالة التفعيل من واتساب هذا الرقم إلى رقم المتجر. بعدها يصلك رابط التفعيل من رقم المتجر.</p><a class="btn g w" target="_blank" rel="noopener" href="https://wa.me/${esc(S.st.wa)}?text=${encodeURIComponent(msg)}">إرسال رسالة التفعيل على واتساب</a><br><br><p class="mut">عند وصول رابط التفعيل اضغط عليه ليُفتح حسابك مباشرة.</p><button class="l btn w" onclick="LG.step=0;render()">تعديل البيانات</button></div>`};
+const _v8=V.login;V.login=()=>LG.step==3?pendView():_v8();
+const _sc8=window.sendCode;window.sendCode=()=>{if(!window.OWNER_PUB)return _sc8();
+ const n=$('#ln').value.trim().replace(/\s+/g,' '),e=$('#le').value.trim().toLowerCase(),p=$('#lp').value.trim().replace(/[٠-٩]/g,d=>d.charCodeAt(0)-1632);
+ if(n.split(' ').length<2||n.length<6)return toast('اكتب الاسم الحقيقي (اسمين على الأقل)');if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))return toast('البريد الإلكتروني غير صحيح');if(!/^01[0125]\d{8}$/.test(p))return toast('رقم الهاتف غير صحيح');
+ const u=S.users.find(x=>x.phone==p);if(u&&u.blocked)return toast('هذا الحساب موقوف');LG={...LG,step:3,name:n,email:e,phone:p};render()};
+let APPROVE='',APL='';const ap0=new URLSearchParams(location.search).get('approve');if(ap0){APPROVE=ap0;H='approve'}
+V.approve=()=>{if(!S.admin)return `<h2>تفعيل عميل</h2><div class="warn">سجّل دخول المالك أولاً.</div><div class="card"><h3>دخول المالك</h3><label>بريد Gmail</label><input id="oe" type="email"><label>كلمة المرور</label><input id="op" type="password"><button class="dk w" onclick="ownerLogin()">دخول المالك</button></div>`;
+ let d;try{d=jp(APPROVE)}catch(e){return '<h2>رابط غير صالح</h2>'}
+ return `<h2>طلب تفعيل عميل</h2><div class="card"><p><b>${esc(d.n)}</b><br>${esc(d.e)}<br><span dir="ltr">${esc(d.p)}</span></p><div class="warn">قارن رقم المرسل في محادثة واتساب بالرقم أعلاه، ولا تفعّل إلا لو تطابقا.</div>${APL?`<a class="btn g w" target="_blank" rel="noopener" href="${APL}">إرسال رابط التفعيل للعميل على واتساب</a>`:`<button class="g w" onclick="doApprove()">تجهيز رابط التفعيل</button>`}</div>`};
+window.doApprove=async()=>{try{const d=jp(APPROVE),pl=pj({n:d.n,e:d.e,p:d.p,t:Date.now()}),sig=await signP(pl),link=location.origin+location.pathname+'?ok='+pl+'.'+sig;APL='https://wa.me/2'+d.p+'?text='+encodeURIComponent('أهلاً '+d.n+'، اضغط على الرابط لتفعيل حسابك في '+S.st.name+':\n'+link);render()}catch(e){toast('لا يوجد مفتاح توقيع على هذا الجهاز، ولّده من الإعدادات')}};
+const _d8=A.dash;A.dash=()=>(APPROVE?`<a class="card mrow owner" onclick="go('approve')"><b>طلب تفعيل عميل معلّق</b><span class="mut">اضغط للمراجعة ←</span></a>`:'')+_d8();
+const actv=async()=>{const m=new URLSearchParams(location.search).get('ok');if(!m)return;const[pl,sig]=m.split('.');
+ try{if(!window.OWNER_PUB||!await verP(pl,sig))throw 0;const d=jp(pl);if(Date.now()-d.t>6048e5)return toast('انتهت صلاحية رابط التفعيل، اطلب رابطاً جديداً');
+  let u=S.users.find(x=>x.phone==d.p);if(u&&u.blocked)return toast('هذا الحساب موقوف');if(!u){u={id:uid(),phone:d.p,joined:new Date().toISOString(),blocked:0};S.users.push(u)}
+  u.name=d.n;u.email=d.e;u.verified=true;S.me={id:u.id,name:u.name,phone:u.phone,email:u.email,verified:true};persist();history.replaceState(null,'',location.pathname);go('me');toast('تم تفعيل حسابك، أهلاً '+u.name)}catch(e){toast('رابط التفعيل غير صالح')}};
+actv();
+
+// ======= v10: white default, owner taps any element to restyle it (color, background image, icon from gallery) =======
+const tagEK=()=>{let n=0;const v=H.split('/')[0];document.querySelectorAll('#app .card,#app .hero2,#app .banner,#app .pc,#app .chips a,#app .stat,#app .th2,#app .mrow').forEach(e=>{if(!e.dataset.ek)e.dataset.ek=v+':'+(n++)});
+ const t=document.getElementById('top');if(t)t.dataset.ek='g:top';document.querySelectorAll('#nav a').forEach((a,i)=>a.dataset.ek='g:nav'+i);const b=document.querySelector('#nav .brand');if(b)b.dataset.ek='g:brand'};
+const applyOV=()=>{const ov=S.site.ov||{};document.querySelectorAll('[data-ek]').forEach(e=>{const o=ov[e.dataset.ek];if(!o)return;
+ e.style.backgroundColor=o.bg||'';e.style.backgroundImage=o.img?`url("${o.img}")`:'';if(o.img){e.style.backgroundSize='cover';e.style.backgroundPosition='center'}
+ if(o.icon){const t=e.querySelector(':scope > b, :scope > .im, :scope > span:first-child, :scope > img, :scope > .ic');if(t)t.innerHTML=`<img src="${o.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`}})};
+window.EKK='';window.openEK=k=>{EKK=k;const o=(S.site.ov||{})[k]||{};let p=$('#ekp');if(!p){document.body.insertAdjacentHTML('beforeend','<div id="ekp"></div>');p=$('#ekp')}
+ p.innerHTML=`<div class="ekh"><b>✏️ تعديل المظهر</b><button class="l btn" onclick="closeEK()">✕ إغلاق</button></div>
+ <label>لون الخلفية</label><div class="row"><input type="color" value="${o.bg||'#ffffff'}" oninput="ekSet('bg',this.value)"><button class="l btn" onclick="ekSet('bg','')">بدون لون</button></div>
+ <label>صورة خلفية من الاستوديو</label><label class="upl"><input type="file" accept="image/*" hidden onchange="ekImg(this,'img',1000)">+ اختيار صورة من الاستوديو</label><button class="l btn" onclick="ekSet('img','')">حذف الصورة</button>
+ <label>أيقونة من الاستوديو</label><label class="upl"><input type="file" accept="image/*" hidden onchange="ekImg(this,'icon',200)">+ اختيار أيقونة من الاستوديو</label><button class="l btn" onclick="ekSet('icon','')">حذف الأيقونة</button>
+ <br><br><button class="r btn w" onclick="ekReset()">استعادة الأصل لهذا العنصر</button>`;p.style.display='block'};
+window.closeEK=()=>{const p=$('#ekp');if(p)p.style.display='none'};
+window.ekSet=(f,v)=>{S.site.ov=S.site.ov||{};const o=S.site.ov[EKK]=S.site.ov[EKK]||{};o[f]=v;if(!o.bg&&!o.img&&!o.icon)delete S.site.ov[EKK];persist();applyOV()};
+window.ekImg=(el,f,w)=>{const x=el.files[0];if(x)shrink(x,d=>{ekSet(f,d);toast('تم التطبيق')},w)};
+window.ekReset=()=>{delete (S.site.ov||{})[EKK];persist();closeEK();render();toast('تم استعادة الأصل')};
+document.addEventListener('click',e=>{if(!S.ed||!S.admin)return;if(e.target.closest('[contenteditable],#ekp,#edtb,#edfab,input,select,textarea,label'))return;
+ const t=e.target.closest('[data-ek]');if(!t)return;e.preventDefault();e.stopPropagation();openEK(t.dataset.ek)},true);
+const _r10=render;render=function(){_r10();tagEK();applyOV()};
+const _as10=window.applySite;window.applySite=()=>{_as10();applyOV()};
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
