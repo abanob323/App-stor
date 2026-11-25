@@ -1,2 +1,2 @@
-// الصق إعدادات Firebase هنا (Project settings > Your apps > Web app). اتركها فارغة للوضع التجريبي.
-window.FB_CONFIG={apiKey:"",authDomain:"",projectId:"",appId:""};
+// إعدادات مشروع Firebase (elbob-store-f40a3). مفتاح الـ Web مش سرّ، الحماية في قواعد Firestore.
+window.FB_CONFIG={apiKey:"AIzaSyDxB5x7knDHSnSqG6l187yX16KE289vQis",authDomain:"elbob-store-f40a3.firebaseapp.com",projectId:"elbob-store-f40a3",storageBucket:"elbob-store-f40a3.firebasestorage.app",messagingSenderId:"215392073748",appId:"1:215392073748:web:c7a25627d7c7864f584f01",measurementId:"G-Z4410750ZY"};
