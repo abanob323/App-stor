@@ -56,4 +56,4 @@ details{margin:8px 0}summary{font-weight:600;cursor:pointer}.ci input{margin:0;f
 
 #ekp{position:fixed;left:0;right:0;bottom:0;max-height:60vh;overflow:auto;background:var(--card);color:var(--tx);border-top:2px solid #F59E0B;z-index:30;padding:12px 14px calc(14px + env(safe-area-inset-bottom));display:none;box-shadow:0 -6px 20px rgba(0,0,0,.2)}
 #ekp label{display:block;margin-top:8px;font-size:.85rem;color:var(--mut)}#ekp .row{display:flex;gap:8px;align-items:center;margin:6px 0}#ekp input[type=color]{width:56px;min-height:40px;padding:0}
-.ekh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}[data-ek]{position:relative}body.edm [data-ek]{outline:1px dashed rgba(245,158,11,.6)}
+.ekh{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}[data-ek]{position:relative}body.edm #app img,body.edm #app svg,body.edm #app button{cursor:pointer}

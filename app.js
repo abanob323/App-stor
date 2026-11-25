@@ -281,7 +281,7 @@ window.pickImg=(cb,w)=>{const i=document.createElement('input');i.type='file';i.
 window.editCat=id=>pickImg(d=>{const c=S.cats.find(x=>x.id==id);c.img=d;persist();render();toast('تم تغيير الأيقونة')},200);
 let CI='';window.catIcon=el=>{if(el.files[0])shrink(el.files[0],d=>{CI=d;$('#cpv').innerHTML=`<img src="${d}" width="48" style="border-radius:12px">`},200)};
 window.addC=()=>{const n=$('#cn').value.trim();if(!n)return toast('اكتب اسم التصنيف');S.cats.push({id:uid(),name:n,icon:'',img:CI});CI='';persist();render()};
-card=function(p){const pc=p.disc>0?Math.round((p.price-p.disc)/p.price*100):0;return `<div class="pc"><div class="im" style="background:${gr(p.cat)}" onclick="GI=0;go('p/${p.id}')">${pimg(p)}${pc?`<span class="bdg">خصم ${pc}%</span>`:''}</div><div class="bd"><h3 onclick="GI=0;go('p/${p.id}')">${esc(p.name)}</h3><span class="mut">${esc(p.brand)}${p.rate?` · ${p.rate} <span class="star">★</span>`:''}</span><div class="row"><div class="pr">${$m(eff(p))}${p.disc>0?`<br><span class="old">${$m(p.price)}</span>`:''}</div>${p.stock>0?`<button class="plus" onclick="add(${p.id})">+</button>`:'<span class="low">نفد</span>'}</div></div></div>`};
+card=function(p){const pc=p.disc>0?Math.round((p.price-p.disc)/p.price*100):0;return `<div class="pc" data-ek="p${p.id}"><div class="im" style="background:${gr(p.cat)}" onclick="GI=0;go('p/${p.id}')">${pimg(p)}${pc?`<span class="bdg">خصم ${pc}%</span>`:''}</div><div class="bd"><h3 onclick="GI=0;go('p/${p.id}')">${esc(p.name)}</h3><span class="mut">${esc(p.brand)}${p.rate?` · ${p.rate} <span class="star">★</span>`:''}</span><div class="row"><div class="pr">${$m(eff(p))}${p.disc>0?`<br><span class="old">${$m(p.price)}</span>`:''}</div>${p.stock>0?`<button class="plus" onclick="add(${p.id})">+</button>`:'<span class="low">نفد</span>'}</div></div></div>`};
 let GI=0;window.gi=i=>{GI=i;render()};
 V.p=id=>{const p=prod(id);if(!p)return V.products();const a=imgsOf(p);GI=Math.min(GI,Math.max(0,a.length-1));
  return `<a class="mut" onclick="go('products')">← رجوع للمنتجات</a><div class="pc" style="margin-top:8px"><div class="im" style="background:${gr(p.cat)}">${a.length?`<img src="${a[GI]}" alt="${esc(p.name)}">`:PH}</div></div>${a.length>1?`<div class="chips">${a.map((x,i)=>`<img class="tn ${i==GI?'on':''}" src="${x}" onclick="gi(${i})">`).join('')}</div>`:''}
@@ -388,26 +388,35 @@ const actv=async()=>{const m=new URLSearchParams(location.search).get('ok');if(!
   u.name=d.n;u.email=d.e;u.verified=true;S.me={id:u.id,name:u.name,phone:u.phone,email:u.email,verified:true};persist();history.replaceState(null,'',location.pathname);go('me');toast('تم تفعيل حسابك، أهلاً '+u.name)}catch(e){toast('رابط التفعيل غير صالح')}};
 actv();
 
-// ======= v10: white default, owner taps any element to restyle it (color, background image, icon from gallery) =======
-const tagEK=()=>{let n=0;const v=H.split('/')[0];document.querySelectorAll('#app .card,#app .hero2,#app .banner,#app .pc,#app .chips a,#app .stat,#app .th2,#app .mrow').forEach(e=>{if(!e.dataset.ek)e.dataset.ek=v+':'+(n++)});
- const t=document.getElementById('top');if(t)t.dataset.ek='g:top';document.querySelectorAll('#nav a').forEach((a,i)=>a.dataset.ek='g:nav'+i);const b=document.querySelector('#nav .brand');if(b)b.dataset.ek='g:brand'};
-const applyOV=()=>{const ov=S.site.ov||{};document.querySelectorAll('[data-ek]').forEach(e=>{const o=ov[e.dataset.ek];if(!o)return;
- e.style.backgroundColor=o.bg||'';e.style.backgroundImage=o.img?`url("${o.img}")`:'';if(o.img){e.style.backgroundSize='cover';e.style.backgroundPosition='center'}
- if(o.icon){const t=e.querySelector(':scope > b, :scope > .im, :scope > span:first-child, :scope > img, :scope > .ic');if(t)t.innerHTML=`<img src="${o.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`}})};
-window.EKK='';window.openEK=k=>{EKK=k;const o=(S.site.ov||{})[k]||{};let p=$('#ekp');if(!p){document.body.insertAdjacentHTML('beforeend','<div id="ekp"></div>');p=$('#ekp')}
- p.innerHTML=`<div class="ekh"><b>✏️ تعديل المظهر</b><button class="l btn" onclick="closeEK()">✕ إغلاق</button></div>
+// ======= v11: owner edits only the exact element tapped =======
+const anchorOf=el=>{let n=el;while(n&&n!==document.body){if(n.dataset&&n.dataset.ek)return n;n=n.parentElement}return null};
+const rootOf=el=>{if(el.closest('#top'))return{id:'top',root:document.getElementById('top')};if(el.closest('#nav'))return{id:'nav',root:document.getElementById('nav')};const a=anchorOf(el);if(a)return{id:a.dataset.ek,root:a};return{id:'app',root:document.getElementById('app')}};
+const keyOf=el=>{const r=rootOf(el);if(!r.root||!r.root.contains(el))return null;const path=[];let n=el;while(n&&n!==r.root){const p=n.parentElement;path.unshift(p?[...p.children].indexOf(n):0);n=p}return r.id+'|'+path.join('.')};
+const resolveK=k=>{const[id,ps]=k.split('|');let n=id=='top'||id=='nav'||id=='app'?document.getElementById(id):document.querySelector(`[data-ek="${id}"]`);if(!n)return null;if(ps)for(const i of ps.split('.')){n=n.children[+i];if(!n)return null}return n};
+const tagEK=()=>{let n=0;const v=H.split('/')[0];document.querySelectorAll('#app .card,#app .hero2,#app .banner,#app .pc,#app .stat,#app .mrow,#app .chips a').forEach(e=>{if(!e.dataset.ek)e.dataset.ek=v+':'+(n++)})};
+const applyOV=()=>{const ov=S.site.ov||{};Object.keys(ov).forEach(k=>{const el=resolveK(k);if(!el)return;const o=ov[k];
+ if(o.bg)el.style.backgroundColor=o.bg;
+ if(o.img){el.style.backgroundImage=`url("${o.img}")`;el.style.backgroundSize='cover';el.style.backgroundPosition='center'}
+ if(o.icon){if(el.tagName=='IMG')el.src=o.icon;else el.innerHTML=`<img src="${o.icon}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`}})};
+const kindOf=t=>{if(t.tagName=='IMG'||t.tagName=='svg'||t.querySelector('svg,img'))return 'icon';if(t.textContent.trim()&&!t.querySelector('img,svg'))return 'text';return 'box'};
+const pickT=e=>e.target.closest('svg,img,button,a,h1,h2,h3,h4,p,span,b,small,.im,.pr,.tag,.bd,.stat,.mrow,.card,.pc,.hero2,.banner')||e.target;
+window.EKK='';window.EKKind='box';
+window.openEK=(k,kind)=>{EKK=k;EKKind=kind;const o=(S.site.ov||{})[k]||{};let p=$('#ekp');if(!p){document.body.insertAdjacentHTML('beforeend','<div id="ekp"></div>');p=$('#ekp')}
+ const nm=kind=='icon'?'أيقونة / صورة':kind=='text'?'نص':'مربع / كارت';
+ p.innerHTML=`<div class="ekh"><b>✏️ تعديل: ${nm}</b><button class="l btn" onclick="closeEK()">✕ إغلاق</button></div>
+ <p class="mut" style="margin:4px 0">التعديل يطبق على هذا العنصر فقط.</p>
  <label>لون الخلفية</label><div class="row"><input type="color" value="${o.bg||'#ffffff'}" oninput="ekSet('bg',this.value)"><button class="l btn" onclick="ekSet('bg','')">بدون لون</button></div>
  <label>صورة خلفية من الاستوديو</label><label class="upl"><input type="file" accept="image/*" hidden onchange="ekImg(this,'img',1000)">+ اختيار صورة من الاستوديو</label><button class="l btn" onclick="ekSet('img','')">حذف الصورة</button>
- <label>أيقونة من الاستوديو</label><label class="upl"><input type="file" accept="image/*" hidden onchange="ekImg(this,'icon',200)">+ اختيار أيقونة من الاستوديو</label><button class="l btn" onclick="ekSet('icon','')">حذف الأيقونة</button>
+ ${kind=='icon'?`<label>أيقونة من الاستوديو</label><label class="upl"><input type="file" accept="image/*" hidden onchange="ekImg(this,'icon',200)">+ اختيار أيقونة من الاستوديو</label><button class="l btn" onclick="ekSet('icon','')">حذف الأيقونة</button>`:''}
  <br><br><button class="r btn w" onclick="ekReset()">استعادة الأصل لهذا العنصر</button>`;p.style.display='block'};
 window.closeEK=()=>{const p=$('#ekp');if(p)p.style.display='none'};
 window.ekSet=(f,v)=>{S.site.ov=S.site.ov||{};const o=S.site.ov[EKK]=S.site.ov[EKK]||{};o[f]=v;if(!o.bg&&!o.img&&!o.icon)delete S.site.ov[EKK];persist();applyOV()};
 window.ekImg=(el,f,w)=>{const x=el.files[0];if(x)shrink(x,d=>{ekSet(f,d);toast('تم التطبيق')},w)};
 window.ekReset=()=>{delete (S.site.ov||{})[EKK];persist();closeEK();render();toast('تم استعادة الأصل')};
 document.addEventListener('click',e=>{if(!S.ed||!S.admin)return;if(e.target.closest('[contenteditable],#ekp,#edtb,#edfab,input,select,textarea,label'))return;
- const t=e.target.closest('[data-ek]');if(!t)return;e.preventDefault();e.stopPropagation();openEK(t.dataset.ek)},true);
-const _r10=render;render=function(){_r10();tagEK();applyOV()};
-const _as10=window.applySite;window.applySite=()=>{_as10();applyOV()};
+ const t=pickT(e),k=keyOf(t);e.preventDefault();e.stopPropagation();if(!k)return;openEK(k,kindOf(t))},true);
+const _r11=render;render=function(){_r11();tagEK();applyOV()};
+const _as11=window.applySite;window.applySite=()=>{_as11();applyOV()};
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
