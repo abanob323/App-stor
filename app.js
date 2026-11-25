@@ -14,7 +14,7 @@ const S={
   {id:4,name:'باور بانك 10000',cat:4,brand:'Anker',cost:400,price:650,disc:590,stock:8,min:3,desc:'شاحن متنقل بمنفذين',img:'',em:'🔋',on:1,sold:0}]),
  site:load('site',{}),svc:load('svc',[{id:1,name:'تغيير شاشة',price:350},{id:2,name:'تغيير بطارية',price:200},{id:3,name:'صيانة شحن',price:150},{id:4,name:'برمجة / سوفت وير',price:100},{id:5,name:'صيانة سماعة',price:120}]),ed:0,users:load('users',[]),me:load('me',null),exp:load('exp',[]),orders:load('orders',[]),books:load('books',[]),cart:load('cart',[]),notes:load('notes',[]),revs:load('revs',[]),admin:false,q:'',cat:0,
 };
-const persist=()=>['st','cats','prods','orders','books','cart','notes','revs','users','me','exp','site','svc'].forEach(k=>save(k,S[k]));
+const persist=()=>['st','cats','prods','orders','books','cart','notes','revs','users','me','exp','site','svc'].forEach(k=>save(k,S[k]));if(window.pushLater)window.pushLater();
 const $m=n=>S.st.cur+' '+Number(n||0).toLocaleString('en-US');
 const eff=p=>p.disc>0?p.disc:p.price;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
@@ -333,7 +333,7 @@ const OWNER='abanobjo323@gmail.com';S.st.owner=OWNER;if(!S.st.pinSet){S.st.pin='
 let OT=0,OL=0;
 window.ownerLogin=()=>{if(Date.now()<OL)return toast('محاولات كثيرة، انتظر دقيقة');const e=$('#oe').value.trim().toLowerCase();if(e!==OWNER||$('#op').value!==String(S.st.pin)){if(++OT>=5){OT=0;OL=Date.now()+60000}return toast('بيانات المالك غير صحيحة')}OT=0;S.admin=true;save('adm',1);go('admin')};
 window.chgPw=()=>{const a=$('#pw0').value,b=$('#pw1').value,c=$('#pw2').value;if(a!==String(S.st.pin))return toast('كلمة المرور الحالية خطأ');if(b.length<4)return toast('الجديدة قصيرة (4 على الأقل)');if(b!==c)return toast('التأكيد غير مطابق');S.st.pin=b;S.st.pinSet=1;persist();toast('تم تغيير كلمة المرور ✓');render()};
-const FBON=()=>!!(window.firebase&&window.FB_CONFIG&&window.FB_CONFIG.apiKey);
+const FBON=()=>false; // SMS عبر Firebase مدفوع (Blaze) فموقوف؛ التحقق المجاني بالواتساب والرابط الموقّع
 const fbSend=()=>{try{if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);const a=firebase.auth();a.languageCode='ar';if(window.RV){try{RV.clear()}catch(e){}}$('#rcp').innerHTML='';window.RV=new firebase.auth.RecaptchaVerifier('rcp',{size:'invisible'});
  a.signInWithPhoneNumber('+2'+LG.phone,RV).then(r=>{LG.conf=r;LG.last=Date.now();render();toast('تم إرسال الكود برسالة SMS')}).catch(er=>{LG.step=0;render();toast('تعذر الإرسال: '+(er.code||er.message))})}catch(er){LG.step=0;render();toast('خطأ في إعداد Firebase')}};
 const _sc=window.sendCode;window.sendCode=()=>{if(window.FB_CONFIG&&FB_CONFIG.apiKey&&!window.firebase)return toast('تعذر تحميل خدمة التحقق، تأكد من الإنترنت');_sc();if(LG.step==1&&FBON())fbSend()};
@@ -420,6 +420,39 @@ const _as11=window.applySite;window.applySite=()=>{_as11();applyOV()};
 
 // ======= v12: store name changed to ELBOB STORE (applied once, owner can still edit later) =======
 if(load('nm',0)<1){S.st.name='ELBOB STORE';save('nm',1);persist()}
+
+// ======= v13: Firebase Firestore sync — owner edits go to the cloud, all customers see them live =======
+const FBOK=()=>!!(window.FB_CONFIG&&window.FB_CONFIG.apiKey&&window.firebase&&firebase.firestore);
+const OWNER_EMAIL='abanobjo323@gmail.com';
+let FDB=null,FAUTH=null;const SYNC={last:{},timer:null,init:false};
+const sj=v=>v&&typeof v=='object'?(Array.isArray(v)?'['+v.map(sj).join(',')+']':'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+sj(v[k])).join(',')+'}'):JSON.stringify(v);
+const clean=o=>JSON.parse(JSON.stringify(o));
+const isOwnerFB=()=>!!(FAUTH&&FAUTH.currentUser&&FAUTH.currentUser.email===OWNER_EMAIL&&FAUTH.currentUser.emailVerified);
+const pubSt=()=>{const s={...S.st};delete s.pin;delete s.owner;return s};
+const pub=()=>({st:pubSt(),site:S.site,svc:S.svc});
+window.pushLater=()=>{clearTimeout(SYNC.timer);SYNC.timer=setTimeout(pushDiff,400)};
+const pushDiff=()=>{if(!FDB||!isOwnerFB())return;const b=FDB.batch();let n=0;
+ const sk=sj(pub());if(sk!==SYNC.last.settings){b.set(FDB.collection('settings').doc('main'),clean(pub()));SYNC.last.settings=sk;n++}
+ ['cats','prods','revs'].forEach(c=>{const cur={};S[c].forEach((x,i)=>cur[String(x.id)]={...x,_o:i});
+  Object.keys(cur).forEach(id=>{const k=c+'/'+id,s=sj(cur[id]);if(SYNC.last[k]!==s){b.set(FDB.collection(c).doc(id),clean(cur[id]));SYNC.last[k]=s;n++}});
+  Object.keys(SYNC.last).filter(k=>k.startsWith(c+'/')).forEach(k=>{const id=k.slice(c.length+1);if(!cur[id]){b.delete(FDB.collection(c).doc(id));delete SYNC.last[k];n++}})});
+ if(n)b.commit().catch(()=>toast('تعذر حفظ التعديل في السحابة'))};
+const listen=()=>{
+ FDB.collection('settings').doc('main').onSnapshot(d=>{if(!d.exists)return;const v=d.data();SYNC.init=true;
+  S.st={...(v.st||{}),pin:S.st.pin,owner:S.st.owner};S.site=v.site||{};S.svc=v.svc||[];SYNC.last.settings=sj(pub());
+  ['st','site','svc'].forEach(k=>save(k,S[k]));if(!H.startsWith('admin/edit'))render()});
+ ['cats','prods','revs'].forEach(c=>FDB.collection(c).onSnapshot(s=>{if(s.empty&&!SYNC.init)return;const arr=[];
+  s.forEach(d=>{const data=d.data();const x={...data};delete x._o;x.id=isNaN(+d.id)?d.id:+d.id;arr.push({x,o:data._o||0,k:c+'/'+d.id})});
+  arr.sort((a,b)=>a.o-b.o);S[c]=arr.map(a=>a.x);arr.forEach(a=>SYNC.last[a.k]=sj({...a.x,_o:a.o}));
+  save(c,S[c]);if(!H.startsWith('admin/edit'))render()}));
+};
+const initFB=()=>{if(!FBOK())return;try{if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);FDB=firebase.firestore();FAUTH=firebase.auth();listen()}catch(e){console.warn('Firebase',e)}};
+window.googleOwner=()=>{if(!FAUTH)return toast('Firebase غير مفعّل بعد');const p=new firebase.auth.GoogleAuthProvider();
+ FAUTH.signInWithPopup(p).then(r=>{if(r.user.email!==OWNER_EMAIL){FAUTH.signOut();return toast('هذا الحساب ليس حساب المالك')}
+  S.admin=true;save('adm',1);toast('تم الدخول، التعديلات هتتحفظ في السحابة');window.pushLater();go('admin')}).catch(e=>toast('تعذر تسجيل الدخول: '+(e.code||'')))};
+const _al13=A.login;A.login=()=>_al13()+`<div class="card"><button class="w" onclick="googleOwner()">🔐 الدخول بحساب Google (مطلوب لحفظ التعديلات للعملاء)</button></div>`;
+const _d13=A.dash;A.dash=()=>{const st=!FBOK()?'Firebase غير مفعّل':isOwnerFB()?'✅ السحابة مفعّلة: كل تعديل يظهر للعملاء فوراً':'⚠️ سجّل الدخول بحساب Google عشان التعديلات تتحفظ للعملاء';return `<div class="card"><b>${st}</b></div>`+_d13()};
+initFB();
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
