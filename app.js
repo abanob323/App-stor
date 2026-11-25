@@ -446,12 +446,18 @@ const listen=()=>{
   arr.sort((a,b)=>a.o-b.o);S[c]=arr.map(a=>a.x);arr.forEach(a=>SYNC.last[a.k]=sj({...a.x,_o:a.o}));
   save(c,S[c]);if(!H.startsWith('admin/edit'))render()}));
 };
-const initFB=()=>{if(!FBOK())return;try{if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);FDB=firebase.firestore();FAUTH=firebase.auth();listen()}catch(e){console.warn('Firebase',e)}};
+const initFB=()=>{if(!FBOK())return;try{if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);FDB=firebase.firestore();FAUTH=firebase.auth();listen();FAUTH.getRedirectResult().then(r=>{if(r&&r.user)ownerOK(r.user)}).catch(()=>{});FAUTH.onAuthStateChanged(u=>{if(u&&u.email===OWNER_EMAIL&&!S.admin){S.admin=true;save('adm',1);render()}})}catch(e){console.warn('Firebase',e)}};
 window.googleOwner=()=>{if(!FAUTH)return toast('Firebase غير مفعّل بعد');const p=new firebase.auth.GoogleAuthProvider();
  FAUTH.signInWithPopup(p).then(r=>{if(r.user.email!==OWNER_EMAIL){FAUTH.signOut();return toast('هذا الحساب ليس حساب المالك')}
   S.admin=true;save('adm',1);toast('تم الدخول، التعديلات هتتحفظ في السحابة');window.pushLater();go('admin')}).catch(e=>toast('تعذر تسجيل الدخول: '+(e.code||'')))};
 const _al13=A.login;A.login=()=>_al13()+`<div class="card"><button class="w" onclick="googleOwner()">🔐 الدخول بحساب Google (مطلوب لحفظ التعديلات للعملاء)</button></div>`;
-const _d13=A.dash;A.dash=()=>{const st=!FBOK()?'Firebase غير مفعّل':isOwnerFB()?'✅ السحابة مفعّلة: كل تعديل يظهر للعملاء فوراً':'⚠️ سجّل الدخول بحساب Google عشان التعديلات تتحفظ للعملاء';return `<div class="card"><b>${st}</b></div>`+_d13()};
+const ownerOK=u=>{if(!u||u.email!==OWNER_EMAIL){if(u)FAUTH.signOut();toast('هذا الحساب ليس حساب المالك');return}S.admin=true;save('adm',1);toast('✅ تم الدخول، التعديلات هتتحفظ في السحابة');window.pushLater();render()};
+window.googleOwner=()=>{if(!FAUTH)return toast('Firebase غير مفعّل بعد');const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+ FAUTH.signInWithPopup(p).then(r=>ownerOK(r.user)).catch(e=>{if(e.code=='auth/popup-blocked'||e.code=='auth/cancelled-popup-request'||e.code=='auth/operation-not-supported-in-this-environment'){return FAUTH.signInWithRedirect(p)}toast('تعذر تسجيل الدخول: '+(e.code||e.message))})};
+const _d13=A.dash;A.dash=()=>{if(!FBOK())return `<div class="card"><b>Firebase غير مفعّل</b></div>`+_d13();
+ if(isOwnerFB())return `<div class="card"><b>✅ السحابة مفعّلة: كل تعديل يظهر للعملاء فوراً</b></div>`+_d13();
+ return `<div class="card" style="border-color:#F59E0B;background:#FFFBEB"><b>⚠️ التعديلات مش هتتحفظ للعملاء غير لما تسجّل الدخول بحساب Google</b><br><br><button class="w" onclick="googleOwner()">🔐 سجّل الدخول بحساب Google</button></div>`+_d13()};
+
 initFB();
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
