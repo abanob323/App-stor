@@ -5,7 +5,7 @@ const save=(k,v)=>localStorage.setItem(K+k,JSON.stringify(v));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now()+Math.floor(Math.random()*999);
 const S={
- st:load('st',{name:'صيانة سماعات El BOB',phone:'01023052470',wa:'201023052470',fb:'https://www.facebook.com/share/1JKPzbseuX/',map:'https://maps.app.goo.gl/pCmHzbxcLQMKkxiN9',pin:'1234',cur:'ج.م',ship:30,slots:'10:00,12:00,14:00,16:00,18:00',hours:'10 ص - 10 م'}),
+ st:load('st',{name:'ELBOB STORE',phone:'01023052470',wa:'201023052470',fb:'https://www.facebook.com/share/1JKPzbseuX/',map:'https://maps.app.goo.gl/pCmHzbxcLQMKkxiN9',pin:'1234',cur:'ج.م',ship:30,slots:'10:00,12:00,14:00,16:00,18:00',hours:'10 ص - 10 م'}),
  cats:load('cats',[{id:1,name:'سماعات',icon:'🎧'},{id:2,name:'جرابات',icon:'📱'},{id:3,name:'شواحن وكابلات',icon:'🔌'},{id:4,name:'باور بانك',icon:'🔋'},{id:5,name:'حماية شاشة',icon:'🛡️'},{id:6,name:'حوامل',icon:'📍'}]),
  prods:load('prods',[
   {id:1,name:'سماعة بلوتوث لاسلكية',cat:1,brand:'JBL',cost:350,price:550,disc:480,stock:12,min:3,desc:'صوت نقي وبطارية تدوم 20 ساعة',img:'',em:'🎧',on:1,sold:0},
@@ -417,6 +417,9 @@ document.addEventListener('click',e=>{if(!S.ed||!S.admin)return;if(e.target.clos
  const t=pickT(e),k=keyOf(t);e.preventDefault();e.stopPropagation();if(!k)return;openEK(k,kindOf(t))},true);
 const _r11=render;render=function(){_r11();tagEK();applyOV()};
 const _as11=window.applySite;window.applySite=()=>{_as11();applyOV()};
+
+// ======= v12: store name changed to ELBOB STORE (applied once, owner can still edit later) =======
+if(load('nm',0)<1){S.st.name='ELBOB STORE';save('nm',1);persist()}
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
