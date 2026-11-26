@@ -1,4 +1,4 @@
-const V='elbob-v15',FILES=['./','index.html','style.css','app.js','config.js','manifest.json','offline.html','firebase-config.js','icons/icon.svg','icons/icon-192.png','icons/icon-512.png'];
+const V='elbob-v16',FILES=['./','index.html','style.css','app.js','config.js','manifest.json','offline.html','firebase-config.js','icons/icon.svg','icons/icon-192.png','icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(FILES.map(f=>c.add(f).catch(()=>0)))));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==V).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener('fetch',e=>{

@@ -459,6 +459,34 @@ const _d13=A.dash;A.dash=()=>{if(!FBOK())return `<div class="card"><b>Firebase �
  return `<div class="card" style="border-color:#F59E0B;background:#FFFBEB"><b>⚠️ التعديلات مش هتتحفظ للعملاء غير لما تسجّل الدخول بحساب Google</b><br><br><button class="w" onclick="googleOwner()">🔐 سجّل الدخول بحساب Google</button></div>`+_d13()};
 
 initFB();
+// ======= v14: مزامنة الحجوزات والطلبات والعملاء مع Firestore (العميل يكتب، المالك يقرأ ويدير) =======
+const COLS=['books','orders','users'];
+const SY2={last:{},watch:{},ownerOn:false,ready:{},t:null};
+const rid=()=>Array.from(crypto.getRandomValues(new Uint8Array(14)),x=>(x%36).toString(36)).join('');
+const fit=x=>{const o=clean(x);if(JSON.stringify(o).length>900000)delete o.imgs;return o};
+const mineOf=c=>!S.me?[]:(c=='users'?S.users.filter(u=>u.id==S.me.id):S[c].filter(x=>x.uid==S.me.id));
+const push2=()=>{if(!FDB)return;const owner=isOwnerFB();
+ COLS.forEach(c=>{let ch=false;const list=owner?S[c]:mineOf(c);
+  list.forEach(x=>{if(!x.cid){x.cid=rid();ch=true}});if(ch)save(c,S[c]);
+  list.forEach(x=>{const k=c+'/'+x.cid,s=sj(x);if(SY2.last[k]===s)return;
+   FDB.collection(c).doc(x.cid).set(fit(x)).then(()=>{SY2.last[k]=s}).catch(()=>{})})})};
+const _pl14=window.pushLater;
+window.pushLater=()=>{_pl14();clearTimeout(SY2.t);SY2.t=setTimeout(push2,500)};
+const watchOwn=()=>{if(!FDB||isOwnerFB())return;
+ ['books','orders'].forEach(c=>mineOf(c).forEach(x=>{if(!x.cid)return;const k=c+'/'+x.cid;if(SY2.watch[k])return;
+  SY2.watch[k]=FDB.collection(c).doc(x.cid).onSnapshot(d=>{if(!d.exists)return;const v=d.data(),l=S[c].find(y=>y.cid==x.cid);if(!l)return;
+   const old=l.status;['status','price','parts'].forEach(f=>{if(v[f]!==undefined)l[f]=v[f]});SY2.last[k]=sj(l);save(c,S[c]);
+   if(old!==l.status)note(c=='books'?'تحديث حجز الصيانة '+l.no:'تحديث طلبك #'+l.no,'الحالة الآن: '+l.status);
+   if(!H.startsWith('admin'))render()},()=>{})}))};
+const ownerListen=()=>{if(SY2.ownerOn||!FDB||!isOwnerFB())return;SY2.ownerOn=true;
+ COLS.forEach(c=>FDB.collection(c).onSnapshot(s=>{
+  const fresh=SY2.ready[c]&&s.docChanges().some(ch=>ch.type=='added'&&!ch.doc.metadata.hasPendingWrites);
+  const arr=[];s.forEach(d=>{const x={...d.data()};x.cid=d.id;arr.push(x)});
+  arr.sort((a,b)=>String(b.d0||b.date||b.joined||'').localeCompare(String(a.d0||a.date||a.joined||'')));
+  S[c]=arr;arr.forEach(x=>{SY2.last[c+'/'+x.cid]=sj(x)});save(c,S[c]);SY2.ready[c]=true;
+  if(fresh)toast(c=='books'?'🔔 حجز صيانة جديد':c=='orders'?'🔔 طلب جديد':'👤 عميل جديد');
+  if(!s.metadata.hasPendingWrites&&!H.startsWith('admin/edit'))render()},e=>toast('تعذر قراءة '+c+': '+(e.code||''))))};
+if(FDB&&FAUTH)FAUTH.onAuthStateChanged(()=>{ownerListen();push2();watchOwn()});
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.DP=e;nav()});
 window.inst=()=>{if(window.DP){DP.prompt();DP.userChoice.then(()=>{window.DP=null;render()})}};
 render();
